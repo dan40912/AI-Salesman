@@ -124,6 +124,7 @@ python3 -m venv .venv
 | `frontend/index.html` | 正式前台、管理頁與設定頁的單頁介面 |
 | `frontend/app.js` | API 呼叫、對話串流、管理與語音互動 |
 | `frontend/avatar.js` | 參數化 SVG Avatar 與動作控制 |
+| `docs/AVATAR-ASSET-PROMPTS.md` | 五位角色的身份母圖、衍生素材、聲音與驗收 Prompt |
 | `frontend/legacy-studio.html` | 原 V2 拆分版示範入口 |
 | `legacy/AI-Salesman.original.html` | 原始單檔 V2 備份，未由正式版覆寫 |
 | `tests/` | 不需訂閱的本機回歸測試與明確啟用的整合測試 |
