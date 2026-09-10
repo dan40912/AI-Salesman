@@ -5,6 +5,7 @@ from fastapi import FastAPI,HTTPException,UploadFile,Request
 from fastapi.responses import FileResponse,StreamingResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles
 from .domain import *
+from .persona_presets import PERSONA_PRESETS,SALES_BASE_PROMPT
 from .storage import Store,MAX_SIZE
 from .codex_client import CodexClient,CodexError
 ROOT=Path(__file__).resolve().parent.parent
@@ -18,16 +19,23 @@ app=FastAPI(title='AI Salesman 本機 API',lifespan=lifespan,docs_url=None,redoc
 @app.middleware('http')
 async def local_only(request,call_next):
  host=request.headers.get('host','');origin=request.headers.get('origin')
- if host not in {'127.0.0.1:8000','localhost:8000','testserver'} or origin and origin not in {'http://127.0.0.1:8000','http://localhost:8000'}:
+ embed_navigation=request.url.path=='/embed' and request.method in {'GET','HEAD'}
+ embed_settings=store.settings() if embed_navigation else None
+ trusted_embed_origin=bool(origin and embed_settings and embed_settings['embed_enabled'] and origin in embed_settings['embed_origins'])
+ if host not in {'127.0.0.1:8000','localhost:8000','testserver'} or origin and origin not in {'http://127.0.0.1:8000','http://localhost:8000'} and not trusted_embed_origin:
   return JSONResponse({'detail':'僅允許本機同源存取'},403)
  if request.method not in {'GET','HEAD','OPTIONS'} and request.headers.get('x-salesman-local')!='1':return JSONResponse({'detail':'缺少本機操作標記'},403)
- if request.headers.get('sec-fetch-site')=='cross-site':return JSONResponse({'detail':'禁止跨站請求'},403)
+ if request.headers.get('sec-fetch-site')=='cross-site' and not embed_navigation:return JSONResponse({'detail':'禁止跨站請求'},403)
  try:size=int(request.headers.get('content-length','0') or 0)
  except ValueError:return JSONResponse({'detail':'無效的內容長度'},400)
  if size>MAX_SIZE+1048576:return JSONResponse({'detail':'檔案超過 20 MB'},413)
  r=await call_next(request)
  r.headers['X-Content-Type-Options']='nosniff';r.headers['Referrer-Policy']='no-referrer';r.headers['Cache-Control']='no-store'
- r.headers['Content-Security-Policy']="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+ frame="'none'"
+ if embed_navigation:
+  s=embed_settings
+  if s['embed_enabled'] and s['embed_origins']:frame="'self' "+' '.join(s['embed_origins'])
+ r.headers['Content-Security-Policy']=f"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors {frame}"
  return r
 class BodyLimit:
  """Bound chunked bodies too, before multipart parsing can spool unbounded data."""
@@ -81,6 +89,8 @@ async def limits():return await codex.limits()
 async def models():return await codex.model_list()
 @app.get('/api/personas')
 def personas():return store.personas()
+@app.get('/api/persona-presets')
+def persona_presets():return PERSONA_PRESETS
 def find_persona(id):
  p=next((p for p in store.personas() if p['id']==id),None)
  if not p:raise HTTPException(404,'找不到角色。')
@@ -99,7 +109,7 @@ def preview(a:Avatar):return a.model_dump()
 @app.get('/api/scenes')
 def scenes():return SCENES
 @app.get('/api/persona-template')
-def template():return {'system_prompt':DEFAULT_PROMPT,'safety':SAFETY}
+def template():return {'system_prompt':DEFAULT_PROMPT,'sales_base':SALES_BASE_PROMPT,'safety':SAFETY}
 @app.post('/api/avatar/upload')
 async def avatar_upload(file:UploadFile):
  name=file.filename or ''
@@ -217,8 +227,13 @@ async def speech(b:Speech):
 def api_docs():return FileResponse(ROOT/'frontend/api-reference.html')
 @app.get('/')
 @app.get('/admin')
+@app.get('/knowledge')
 @app.get('/setup')
 def page():return FileResponse(ROOT/'frontend/index.html')
+@app.get('/embed')
+def embed_page():
+ if not store.settings()['embed_enabled']:raise HTTPException(404,'嵌入模式尚未啟用。')
+ return FileResponse(ROOT/'frontend/index.html')
 @app.get('/legacy-studio')
 def legacy():return FileResponse(ROOT/'frontend/legacy-studio.html')
 app.mount('/',StaticFiles(directory=ROOT/'frontend'),name='frontend')

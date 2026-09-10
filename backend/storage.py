@@ -22,9 +22,9 @@ class Store:
    with c:yield c
   finally:c.close()
  def settings(self):
-  with self.db() as c:return json.loads(c.execute('SELECT body FROM settings WHERE id=1').fetchone()[0])
+  with self.db() as c:return Settings(**json.loads(c.execute('SELECT body FROM settings WHERE id=1').fetchone()[0])).model_dump()
  def personas(self):
-  with self.db() as c:return [dict(id=r['id'],**json.loads(r['body'])) for r in c.execute('SELECT * FROM personas')]
+  with self.db() as c:return [dict(id=r['id'],**Persona(**json.loads(r['body'])).model_dump()) for r in c.execute('SELECT * FROM personas')]
  def save_persona(self,p,id=None):
   id=id or uuid.uuid4().hex
   with self.db() as c:c.execute('INSERT OR REPLACE INTO personas VALUES(?,?)',(id,p.model_dump_json()))

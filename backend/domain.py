@@ -1,7 +1,7 @@
 """Validated local configuration, persona templates and performance rules."""
 import json, re
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from jsonschema import validate, ValidationError
 EMOTIONS=['neutral','smile','attentive','thinking','empathetic','confident','excited']
 GESTURES=['still','greeting','nod','small_nod','open_hand','present_product','thinking','closing']
@@ -32,6 +32,12 @@ class Persona(Strict):
  task:str=Field('了解需求並提供已知產品資訊',max_length=1000)
  tone:str=Field('親切、清楚、專業',max_length=500)
  traits:str=Field('耐心傾聽、誠實',max_length=500)
+ persona_category:str=Field('自訂角色',max_length=80)
+ sales_philosophy:str=Field('',max_length=1500)
+ sales_strategy:str=Field('',max_length=2500)
+ decision_logic:str=Field('',max_length=2500)
+ objection_strategy:str=Field('',max_length=2500)
+ catchphrases:str=Field('',max_length=1500)
  product:str=Field('',max_length=12000)
  rules:str=Field('不清楚的資訊先確認',max_length=2000)
  prohibitions:str=Field('不捏造價格或承諾',max_length=2000)
@@ -51,6 +57,18 @@ class Settings(Strict):
  response_length:Literal['short','medium']='short'
  voice_enabled:bool=True
  voice_engine:Literal['browser','macos']='macos'
+ embed_enabled:bool=False
+ embed_origins:list[str]=Field(default_factory=list,max_length=10)
+ @field_validator('embed_origins')
+ @classmethod
+ def valid_embed_origins(cls,values):
+  pattern=r'^https?://(?:localhost|127\.0\.0\.1|(?:[a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+)(?::[1-9][0-9]{0,4})?$'
+  cleaned=[]
+  for value in values:
+   value=value.strip().rstrip('/')
+   if len(value)>200 or not re.fullmatch(pattern,value):raise ValueError('嵌入來源必須是完整的 http(s) 網站來源，不含路徑。')
+   if value not in cleaned:cleaned.append(value)
+  return cleaned
 class Chat(Strict):
  persona_id:str=Field(pattern=r'^[a-f0-9]{32}$')
  conversation_id:str|None=Field(None,pattern=r'^[a-f0-9]{32}$')

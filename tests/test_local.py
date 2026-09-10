@@ -10,7 +10,7 @@ class LocalTests(unittest.TestCase):
  @classmethod
  def setUpClass(cls):cls.c=TestClient(app,headers=H)
  def test_pages_and_health(self):
-  for p in ['/','/admin','/setup','/api/health','/openapi.json','/styles.css','/app.js','/avatar.js','/legacy-studio']:self.assertEqual(self.c.get(p).status_code,200,p)
+  for p in ['/','/admin','/knowledge','/setup','/api/health','/openapi.json','/styles.css','/app.js','/avatar.js','/legacy-studio']:self.assertEqual(self.c.get(p).status_code,200,p)
   h=self.c.get('/api/health').json();self.assertTrue(h['sqlite']);self.assertFalse(h['app_server'])
  def test_crud_persona(self):
   p=self.c.post('/api/personas',json={'name':'測試角色'}).json();id=p.pop('id');p['tone']='溫柔、簡短';self.assertEqual(self.c.put('/api/personas/'+id,json=p).status_code,200);self.assertFalse(self.c.delete('/api/personas/'+id).json()['active'])
@@ -18,6 +18,22 @@ class LocalTests(unittest.TestCase):
   self.assertEqual(self.c.post('/api/personas',json={'name':'','avatar':{'skin':'<script>'}}).status_code,422)
   self.assertEqual(self.c.post('/api/avatar/preview',json={'width':9}).status_code,422)
   self.assertEqual(len(self.c.get('/api/avatar/presets').json()),8);self.assertEqual(len(self.c.get('/api/scenes').json()),5)
+ def test_sales_persona_presets(self):
+  presets=self.c.get('/api/persona-presets').json();self.assertEqual([p['name'] for p in presets],['孫割','分析哥','腿姐','誠實哥','攤販姐']);self.assertEqual(len({p['persona']['sales_strategy'] for p in presets}),5)
+  for p in presets:
+   self.assertTrue(p['flow']);self.assertGreater(len(p['persona']['system_prompt']),80);self.assertIn('persona_category',p['persona'])
+  self.assertIn('不得捏造',self.c.get('/api/persona-template').json()['sales_base'])
+  saved=self.c.post('/api/personas',json={'name':'舊格式角色'}).json();self.assertEqual(saved['persona_category'],'自訂角色');self.assertIn('decision_logic',saved)
+ def test_embed_allowlist(self):
+  original=self.c.get('/api/settings').json();self.assertEqual(self.c.get('/embed').status_code,404)
+  bad={**original,'embed_enabled':True,'embed_origins':['https://example.com/path']};self.assertEqual(self.c.put('/api/settings',json=bad).status_code,422)
+  configured={**original,'embed_enabled':True,'embed_origins':['https://shop.example.com/']}
+  try:
+   saved=self.c.put('/api/settings',json=configured).json();self.assertEqual(saved['embed_origins'],['https://shop.example.com'])
+   r=self.c.get('/embed',headers={'Origin':'https://shop.example.com','Sec-Fetch-Site':'cross-site'});self.assertEqual(r.status_code,200);self.assertIn("frame-ancestors 'self' https://shop.example.com",r.headers['content-security-policy'])
+   self.assertEqual(self.c.get('/embed',headers={'Origin':'https://evil.example','Sec-Fetch-Site':'cross-site'}).status_code,403)
+   self.assertIn("frame-ancestors 'none'",self.c.get('/admin').headers['content-security-policy'])
+  finally:self.c.put('/api/settings',json=original)
  def test_csrf_and_host(self):
   self.assertEqual(self.c.get('/api/health',headers={'Host':'evil.example'}).status_code,403)
   self.assertEqual(self.c.get('/api/health',headers={'Origin':'https://evil.example'}).status_code,403)

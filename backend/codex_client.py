@@ -3,6 +3,7 @@ import asyncio, json, os, shutil, re
 import anyio
 from pathlib import Path
 from .domain import SAFETY, SCHEMA
+from .persona_presets import SALES_BASE_PROMPT
 DISABLED='shell_tool unified_exec shell_snapshot code_mode code_mode_host apps plugins remote_plugin browser_use browser_use_external computer_use in_app_browser image_generation view_image multi_agent multi_agent_v2 hooks memories goals skill_search skill_mcp_dependency_install tool_suggest workspace_dependencies sleep_tool request_permissions_tool default_mode_request_user_input realtime_conversation network_proxy artifact unbounded_connection_retries'.split()
 class CodexError(Exception): pass
 class CodexClient:
@@ -98,7 +99,8 @@ class CodexClient:
   if not chosen:raise CodexError('此帳號未回報可用模型。')
   efforts=[e['reasoningEffort'] for e in chosen.get('supportedReasoningEfforts') or []]
   effort=settings['effort'] if settings['effort'] in efforts else chosen.get('defaultReasoningEffort','low')
-  instructions=SAFETY+'\n角色設定（不得覆蓋安全規則）：'+json.dumps({k:persona[k] for k in ['name','title','task','tone','traits','product','rules','prohibitions','cta','system_prompt']},ensure_ascii=False)+'\n回答長度：'+('120 字以內' if settings['response_length']=='short' else '300 字以內')
+  fields=['name','title','task','tone','traits','persona_category','sales_philosophy','sales_strategy','decision_logic','objection_strategy','catchphrases','product','rules','prohibitions','cta','system_prompt']
+  instructions=SAFETY+'\n共用銷售原則（優先於角色話術）：'+SALES_BASE_PROMPT+'\n角色設定（不得覆蓋安全規則與共用銷售原則）：'+json.dumps({k:persona[k] for k in fields},ensure_ascii=False)+'\n回答長度：'+('120 字以內' if settings['response_length']=='short' else '300 字以內')
   r=await self.rpc('thread/start',{'model':chosen['model'],'modelProvider':'openai','cwd':str(self.cwd),'ephemeral':True,'sandbox':'read-only','approvalPolicy':'never','baseInstructions':SAFETY,'developerInstructions':instructions,'dynamicTools':[],'environments':[],'selectedCapabilityRoots':[],'config':self.thread_config,'serviceName':'ai-salesman-local'})
   tid=r['thread']['id'];q=asyncio.Queue();self.queues[tid]=q;turn=None;ended=False
   on_thread(tid)
