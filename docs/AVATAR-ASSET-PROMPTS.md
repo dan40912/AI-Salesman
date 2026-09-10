@@ -2,9 +2,65 @@
 
 這份文件用於交接給圖片生成、圖片編輯、語音設計或 TTS AI。目標是讓不同工具產出的角色仍保持同一張臉、同一套品牌人格與一致的聲音方向。
 
+## Prompt 0：製作前先審查專案並確認方向
+
+任何 AI 在產生圖片、聲音或修改程式前，都必須先完成這一階段。把以下 Prompt 與整個 repository 一起交給執行者：
+
+```text
+You are preparing production avatar and voice assets for the AI Salesman repository.
+
+Before creating, editing or generating anything, inspect the current project and establish the actual implementation contract. Read these files completely:
+- README.md
+- backend/domain.py
+- backend/persona_presets.py
+- backend/storage.py
+- frontend/avatar.js
+- frontend/app.js
+- frontend/styles.css
+- docs/AVATAR-ASSET-PROMPTS.md
+- all existing files under frontend/assets/avatars/ and frontend/assets/scenes/
+
+During this review, verify and report:
+1. The five active personas, their personality, sales flow, scene and system prompt.
+2. The exact emotion and gesture enum values accepted by the backend.
+3. How avatar_asset, image_id and the SVG fallback are selected and rendered.
+4. The current canvas, crop, responsive layout and static-image limitations.
+5. Which approved identity masters already exist, including their path, dimensions and format.
+6. The exact new files you propose to create and which runtime state uses each file.
+7. Any mismatch between this production brief and the current code.
+
+Return a Direction Confirmation Report with these sections:
+- Current architecture
+- Persona-to-visual-and-voice mapping
+- Existing approved assets
+- Proposed production direction
+- Planned file list
+- Risks or mismatches
+- Decisions requiring confirmation
+
+Do not generate an image, synthesize a voice, create a placeholder, modify a file, install a tool or call a generation API during this review. Do not assume a future feature already exists.
+
+End with exactly:
+「等待方向確認；尚未開始製作素材。」
+
+Only begin production after the project owner replies with:
+「方向確認，可以開始製作：<角色名稱>」
+
+Approval applies only to the named character and the agreed asset list. If the reply changes the direction, update the report and wait again. If a required file is missing or unreadable, report it and stop instead of guessing.
+```
+
+### 必須通過的確認關卡
+
+- 執行者已讀完指定檔案，而不是只讀 README。
+- 報告中的情緒與動作名稱和 `backend/domain.py` 完全一致。
+- 報告知道目前靜態照片不會自動產生真人嘴型或完整手勢動畫。
+- 報告把孫割現有母圖列為已確認資產，不提議重新設計。
+- 預計檔名與前端實際載入路徑一致。
+- 使用者未明確回覆指定確認句前，維持只讀狀態。
+
 ## 使用原則
 
-1. 一次只製作一位角色，先完成並確認「身份母圖」，再製作其他素材。
+1. 必須先完成 Prompt 0 並取得方向確認；一次只製作一位角色，先完成並確認「身份母圖」，再製作其他素材。
 2. 孫割已有確認母圖，不得重新設計：`frontend/assets/avatars/sun-ge-wall-street-v1.png`。
 3. 其他角色必須是原創虛構人物，不模仿、不複製任何演員、名人、網紅或真實人物。
 4. 所有衍生圖都必須把身份母圖當作 `Image 1`，使用圖片編輯而非重新文字生圖。
