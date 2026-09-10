@@ -74,7 +74,7 @@ async function health(){const h=await api('/api/health');$('healthStatus').repla
 function refreshVoices(){const s=$('field-voice');if(!s||!draft)return;const v=draft.voice;s.replaceChildren();option(s,'','系統預設');(window.speechSynthesis?.getVoices()||[]).forEach(x=>option(s,x.voiceURI,x.name+' · '+x.lang));if([...s.options].some(o=>o.value===v))s.value=v}
 function setupSpeech(){if(window.speechSynthesis){speechSynthesis.addEventListener('voiceschanged',refreshVoices);refreshVoices()}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;$('mic').disabled=!SR;$('speechSupport').textContent=(SR?'語音輸入可用；點擊後才要求麥克風。':'此瀏覽器不支援語音辨識，可繼續文字聊天。')+('speechSynthesis'in window?' 瀏覽器語音合成可用。':' 瀏覽器語音合成不支援。');
  if(SR){recognition=new SR();recognition.lang='zh-TW';recognition.interimResults=true;recognition.onstart=()=>{state('listening');setCue($('stage'),'attentive','still')};recognition.onresult=e=>{$('chatInput').value=Array.from(e.results).map(r=>r[0].transcript).join('')};recognition.onend=()=>{if(!busy)state('idle')};recognition.onerror=e=>{notify('語音輸入失敗：'+e.error+'。你仍可輸入文字。');state('error')};$('mic').onclick=guard(async()=>{await stopAll();recognition.start()})}}
-async function init(){const route=location.pathname;document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active',a.dataset.route===route));$('customer').hidden=route!=='/';$('admin').hidden=route!=='/admin';$('setup').hidden=route!=='/setup';const titles={'/admin':['建立屬於你的 AI 業務團隊。','從角色個性、產品知識到每一個表情，在這裡細心設定。','業務角色工作室'],'/setup':['準備好，開始真實的對話。','連接自己的 ChatGPT 訂閱，所有本機資料由你掌握。','連線與設定']};if(titles[route]){const[t,s,b]=titles[route];$('pageTitle').textContent=t;$('pageSubtitle').textContent=s;$('breadcrumb').textContent=b}
+async function init(){const route=location.pathname;document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active',a.dataset.route===route));$('customer').hidden=route!=='/';$('admin').hidden=route!=='/admin';$('setup').hidden=route!=='/setup';const titles={'/admin':['現在就打造你的 AI 業務團隊。','幾分鐘設定角色、產品與話術，立即看見可用的 AI 業務。','打造 AI 業務'],'/setup':['準備好，讓 AI 開始替你接待客戶。','連接 ChatGPT 訂閱，立即啟動你的本機 AI 業務工作室。','啟動 AI 業務']};if(titles[route]){const[t,s,b]=titles[route];$('pageTitle').textContent=t;$('pageSubtitle').textContent=s;$('breadcrumb').textContent=b}
  [personas,presets,scenes,settings]=await Promise.all(['/api/personas','/api/avatar/presets','/api/scenes','/api/settings'].map(p=>api(p)));fillSelectors();const requested=new URLSearchParams(location.search).get('persona');if(personas.some(p=>p.id===requested&&p.active)){$('customerPersona').value=requested;showPersona()}loadDraft();setupSpeech();const template=await api('/api/persona-template');$('safetyPreview').textContent='固定安全規範（始終生效）：\n'+template.safety;$('restorePrompt').onclick=()=>{$('systemPrompt').value=template.system_prompt;draft.system_prompt=template.system_prompt;notify('已恢復預設，請儲存角色。')};
  presets.forEach(p=>{const b=el('button',undefined,'preset');b.title=p.name;b.append(AvatarStudio.render(p.avatar),el('span',p.name));b.onclick=()=>{draft.avatar=structuredClone(p.avatar);draft.image_id=null;renderAvatarFields();previewDraft()};$('presetGrid').append(b)});
  const tests=[['眨眼','neutral','still'],['微笑','smile','still'],['思考','thinking','thinking'],['關心','empathetic','small_nod'],['興奮','excited','open_hand'],['點頭','smile','nod'],['搖頭','neutral','shake'],['聆聽','attentive','still'],['介紹產品','confident','present_product'],['結束','smile','closing']];
@@ -90,4 +90,26 @@ async function init(){const route=location.pathname;document.querySelectorAll('[
  $('settingsForm').onsubmit=guard(async e=>{e.preventDefault();const s={model:$('modelSelect').value,effort:$('effortSelect').value,response_length:$('responseLength').value,history_turns:Number($('historyTurns').value),rag_top_k:Number($('ragTopK').value),voice_engine:$('voiceEngine').value,voice_enabled:$('voiceEnabled').checked};settings=await api('/api/settings',{method:'PUT',body:JSON.stringify(s)});notify('設定已儲存。')});
  if(route==='/admin')await documents();if(route==='/setup')await health();
 }
-window.addEventListener('pagehide',()=>{performanceController.stop();recognition?.abort();abort?.abort()});init().catch(e=>notify(e.message));
+function renderMarketingHero(){
+ if(location.pathname!=='/'||document.querySelector('.marketing-hero'))return;
+ $('pageTitle').textContent='把每一次詢問，變成一次成交機會。';
+ $('pageSubtitle').textContent='不用招募、不用排班，今天就讓你的 AI 業務開始工作。';
+ $('breadcrumb').textContent='立即試用';
+ const topAction=document.querySelector('.topbar .btn');
+ if(topAction){topAction.href='/admin';topAction.textContent='立即打造 AI 業務 ↗'}
+ const hero=el('section',undefined,'marketing-hero');
+ const copy=el('div',undefined,'marketing-copy');
+ copy.append(el('span','你的下一位業務，現在就能上線。','eyebrow'),el('h2','把每一次詢問，變成一次成交機會。'),el('p','把產品知識、銷售話術與品牌語氣交給 AI，立即開始一段可用的業務對話。','marketing-description'));
+ const actions=el('div',undefined,'marketing-actions');
+ const start=document.createElement('a');start.href='/admin';start.className='btn primary';start.textContent='立即打造我的 AI 業務 ↗';
+ const chat=document.createElement('a');chat.href='#customer';chat.className='btn';chat.textContent='先試一輪對話';
+ actions.append(start,chat);
+ const points=el('div',undefined,'marketing-points');
+ ['快速建立角色','產品資料可控','立即測試對話'].forEach(t=>points.append(el('span',t)));
+ copy.append(actions,points,el('small','本機體驗版｜設定完成後即可在下方測試。','marketing-note'));
+ const figure=el('figure',undefined,'marketing-visual');
+ const img=document.createElement('img');img.src='/assets/product-preview.png';img.alt='AI Salesman 角色工作室畫面，展示角色設定與即時人物預覽';img.loading='lazy';
+ figure.append(img,el('figcaption','從角色設定到即時預覽，一個畫面完成。'));
+ hero.append(copy,figure);$('customer').before(hero);
+}
+window.addEventListener('pagehide',()=>{performanceController.stop();recognition?.abort();abort?.abort()});renderMarketingHero();init().catch(e=>notify(e.message));

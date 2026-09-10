@@ -4,6 +4,8 @@ AI Salesman 是一個只在本機執行的 AI 業務顧問原型。它把角色�
 
 > 本專案目前是單使用者、本機測試版。服務固定綁定 `127.0.0.1`，請勿對外開放或直接部署到公開網路。
 
+![AI Salesman 角色工作室預覽](frontend/assets/product-preview.png)
+
 ## 功能
 
 - 管理多個 AI 業務角色：任務、語氣、產品資訊、規則、CTA 與 Avatar 外觀。
