@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 from contextlib import contextmanager
 from .domain import Persona,PRESETS,Settings
+from .persona_presets import PERSONA_PRESETS
 MAX_SIZE=20*1024*1024
 MAX_TEXT=2_000_000
 class Store:
@@ -12,8 +13,10 @@ class Store:
   with self.db() as c:
    c.executescript('''CREATE TABLE IF NOT EXISTS personas(id TEXT PRIMARY KEY,body TEXT); CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY,body TEXT); CREATE TABLE IF NOT EXISTS docs(id TEXT PRIMARY KEY,name TEXT,size INTEGER,hash TEXT UNIQUE,updated TEXT,chunks INTEGER); CREATE TABLE IF NOT EXISTS chunks(id INTEGER PRIMARY KEY,doc_id TEXT,n INTEGER,text TEXT); CREATE VIRTUAL TABLE IF NOT EXISTS search USING fts5(tokens,title,chunk_id UNINDEXED); CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,persona TEXT,thread TEXT,history TEXT);''')
    if not c.execute('SELECT 1 FROM personas').fetchone():
-    for i,n in enumerate(['林宇辰','陳雅婷','王子豪','張若晴']):
-     p=Persona(name=n,avatar=PRESETS[i]['avatar'],scene=['desk','store','product','care'][i]);c.execute('INSERT INTO personas VALUES(?,?)',(uuid.uuid4().hex,p.model_dump_json()))
+    for i,preset in enumerate(PERSONA_PRESETS):
+     data={**preset['persona'],'avatar':PRESETS[i]['avatar']}
+     if i==0:data['avatar_asset']='avatars/sun-ge-wall-street-v1.png'
+     p=Persona(**data);c.execute('INSERT INTO personas VALUES(?,?)',(uuid.uuid4().hex,p.model_dump_json()))
    c.execute('INSERT OR IGNORE INTO settings VALUES(1,?)',(Settings().model_dump_json(),))
  @contextmanager
  def db(self):
@@ -24,7 +27,7 @@ class Store:
  def settings(self):
   with self.db() as c:return Settings(**json.loads(c.execute('SELECT body FROM settings WHERE id=1').fetchone()[0])).model_dump()
  def personas(self):
-  with self.db() as c:return [dict(id=r['id'],**Persona(**json.loads(r['body'])).model_dump()) for r in c.execute('SELECT * FROM personas')]
+  with self.db() as c:return [dict(id=r['id'],**Persona(**json.loads(r['body'])).model_dump()) for r in c.execute('SELECT * FROM personas ORDER BY rowid')]
  def save_persona(self,p,id=None):
   id=id or uuid.uuid4().hex
   with self.db() as c:c.execute('INSERT OR REPLACE INTO personas VALUES(?,?)',(id,p.model_dump_json()))

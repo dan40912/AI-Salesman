@@ -32,6 +32,6 @@ window.AvatarStudio=(()=>{
   if(a.hair==='bun')face.insertBefore(ellipse(250,64,47,33,a.hair_color),face.firstChild);
   face.append(path(hair,a.hair_color));return root;
  }
- function mount(target,persona){target.replaceChildren();if(persona.image_id&&/^[a-f0-9]{32}\.png$/.test(persona.image_id)){let img=document.createElement('img');img.src='/media/avatar/'+persona.image_id;img.alt='角色靜態圖片（無真人唇形）';target.append(img)}else target.append(render(persona.avatar))}
+ function mount(target,persona){target.replaceChildren();let src=null;if(persona.image_id&&/^[a-f0-9]{32}\.png$/.test(persona.image_id))src='/media/avatar/'+persona.image_id;else if(persona.avatar_asset&&/^avatars\/[a-z0-9-]+\.(png|jpe?g|webp)$/.test(persona.avatar_asset))src='/assets/'+persona.avatar_asset;if(src){let img=document.createElement('img');img.src=src;img.alt=(persona.name||'AI 業務顧問')+'角色主視覺（靜態圖片）';target.append(img)}else target.append(render(persona.avatar))}
  return {render,mount};
 })();

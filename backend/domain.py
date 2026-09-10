@@ -47,6 +47,7 @@ class Persona(Strict):
  voice:str=Field('',max_length=150)
  rate:float=Field(1,ge=.6,le=1.4)
  image_id:str|None=Field(None,pattern=r'^[a-f0-9]{32}\.png$')
+ avatar_asset:str|None=Field(None,pattern=r'^avatars/[a-z0-9-]+\.(?:png|jpe?g|webp)$')
  avatar:Avatar=Field(default_factory=Avatar)
  active:bool=True
 class Settings(Strict):

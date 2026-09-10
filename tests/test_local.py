@@ -24,6 +24,9 @@ class LocalTests(unittest.TestCase):
    self.assertTrue(p['flow']);self.assertGreater(len(p['persona']['system_prompt']),80);self.assertIn('persona_category',p['persona'])
   self.assertIn('不得捏造',self.c.get('/api/persona-template').json()['sales_base'])
   saved=self.c.post('/api/personas',json={'name':'舊格式角色'}).json();self.assertEqual(saved['persona_category'],'自訂角色');self.assertIn('decision_logic',saved)
+ def test_default_sales_team(self):
+  people=self.c.get('/api/personas').json()[:5];self.assertEqual([p['name'] for p in people],['孫割','分析哥','腿姐','誠實哥','攤販姐'])
+  self.assertEqual(people[0]['avatar_asset'],'avatars/sun-ge-wall-street-v1.png');self.assertEqual(self.c.get('/assets/'+people[0]['avatar_asset']).status_code,200)
  def test_embed_allowlist(self):
   original=self.c.get('/api/settings').json();self.assertEqual(self.c.get('/embed').status_code,404)
   bad={**original,'embed_enabled':True,'embed_origins':['https://example.com/path']};self.assertEqual(self.c.put('/api/settings',json=bad).status_code,422)
