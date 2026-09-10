@@ -23,3 +23,7 @@
 .marketing-visual figcaption{padding:11px 14px;color:#6d6e7b;font-size:11px}
 @media(max-width:850px){.marketing-hero{grid-template-columns:1fr;margin:0 22px 22px;padding:22px}.marketing-visual{order:-1}.marketing-visual img{max-height:290px}.marketing-copy h2{font-size:32px}}
 @media(max-width:430px){.marketing-hero{margin:0 14px 20px;padding:18px}.marketing-copy h2{font-size:28px}.marketing-description{font-size:13px}}
+.subscription-pitch{margin:20px 0;padding:17px 18px;background:linear-gradient(120deg,#f1eeff,#faf9ff);border:1px solid #e1daf8;border-radius:11px}
+.subscription-pitch strong{display:block;color:#4f3bb8;font-size:15px;line-height:1.5}
+.subscription-pitch p{margin-top:6px;color:#625f70;font-size:12px;line-height:1.7}
+#recheck{margin-top:4px}

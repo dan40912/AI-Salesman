@@ -2,6 +2,8 @@
 
 AI Salesman 是一個只在本機執行的 AI 業務顧問原型。它把角色設定、產品知識、文字對話、2D Avatar 動畫與語音播放整合在同一個本機介面；文字生成透過官方 Codex App Server 使用你的 ChatGPT 訂閱，應用程式本身不需要 OpenAI API key。
 
+只要有 ChatGPT／GPT 訂閱，完成官方 Codex CLI 登入，你的 AI 銷售人員就能開始工作；設定角色與產品資料後，立即在本機測試對話。
+
 > 本專案目前是單使用者、本機測試版。服務固定綁定 `127.0.0.1`，請勿對外開放或直接部署到公開網路。
 
 ![AI Salesman 角色工作室預覽](frontend/assets/product-preview.png)
